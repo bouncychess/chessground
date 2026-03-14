@@ -70,11 +70,7 @@ function setPremove(state: HeadlessState, orig: cg.Key, dest: cg.Key, meta: cg.S
     if (!pm.piecesBeforePremoves) {
       pm.piecesBeforePremoves = new Map(state.pieces);
     }
-    const piece = state.pieces.get(orig);
-    if (piece) {
-      state.pieces.delete(orig);
-      state.pieces.set(dest, piece);
-    }
+    visuallyMovePiece(state, orig, dest);
   }
   callUserFunction(pm.events.set, orig, dest, meta);
 }
@@ -95,21 +91,50 @@ export function unsetPremove(state: HeadlessState): void {
 export function unsetLastPremove(state: HeadlessState): void {
   const pm = state.premovable;
   if (pm.queue.length) {
-    const removed = pm.queue.pop()!;
+    pm.queue.pop();
     pm.current = pm.queue[0];
-    // Undo the visual piece move for the removed premove
-    if (pm.maxQueue > 1 && removed) {
-      const piece = state.pieces.get(removed[1]);
-      if (piece) {
-        state.pieces.delete(removed[1]);
-        state.pieces.set(removed[0], piece);
-      }
-    }
     if (!pm.queue.length) {
-      pm.piecesBeforePremoves = undefined;
+      if (pm.piecesBeforePremoves) {
+        state.pieces = pm.piecesBeforePremoves;
+        pm.piecesBeforePremoves = undefined;
+      }
       callUserFunction(pm.events.unset);
+    } else if (pm.piecesBeforePremoves) {
+      state.pieces = new Map(pm.piecesBeforePremoves);
+      for (const [orig, dest] of pm.queue) visuallyMovePiece(state, orig, dest);
     }
   }
+}
+
+function visuallyMovePiece(state: HeadlessState, orig: cg.Key, dest: cg.Key): void {
+  const piece = state.pieces.get(orig);
+  if (!piece) return;
+  if (piece.role === 'king' && state.autoCastle && tryVisualCastle(state, orig, dest, piece)) return;
+  state.pieces.delete(orig);
+  state.pieces.set(dest, piece);
+}
+
+function tryVisualCastle(state: HeadlessState, orig: cg.Key, dest: cg.Key, king: cg.Piece): boolean {
+  const origPos = key2pos(orig);
+  const destPos = key2pos(dest);
+  if (origPos[1] !== destPos[1] || (origPos[1] !== 0 && origPos[1] !== 7)) return false;
+  let rookSq = dest;
+  if (origPos[0] === 4 && !state.pieces.has(dest)) {
+    if (destPos[0] === 6) rookSq = pos2keyUnsafe([7, destPos[1]]);
+    else if (destPos[0] === 2) rookSq = pos2keyUnsafe([0, destPos[1]]);
+  }
+  const rook = state.pieces.get(rookSq);
+  if (!rook || rook.role !== 'rook' || rook.color !== king.color) return false;
+  state.pieces.delete(orig);
+  state.pieces.delete(rookSq);
+  if (origPos[0] < key2pos(rookSq)[0]) {
+    state.pieces.set(pos2keyUnsafe([6, destPos[1]]), king);
+    state.pieces.set(pos2keyUnsafe([5, destPos[1]]), rook);
+  } else {
+    state.pieces.set(pos2keyUnsafe([2, destPos[1]]), king);
+    state.pieces.set(pos2keyUnsafe([3, destPos[1]]), rook);
+  }
+  return true;
 }
 
 function setPredrop(state: HeadlessState, role: cg.Role, key: cg.Key): void {
