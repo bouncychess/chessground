@@ -119,6 +119,14 @@ export function configure(state: HeadlessState, config: Config): void {
     // Update premove snapshot to the new position so playPremove doesn't restore stale pieces
     if (state.premovable.piecesBeforePremoves) {
       state.premovable.piecesBeforePremoves = new Map(state.pieces);
+      // Re-apply visual premove positions so pieces don't flicker back
+      for (const m of state.premovable.queue) {
+        const piece = state.pieces.get(m[0]);
+        if (piece) {
+          state.pieces.delete(m[0]);
+          state.pieces.set(m[1], piece);
+        }
+      }
     }
   }
 
