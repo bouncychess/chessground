@@ -118,6 +118,7 @@ function tryVisualCastle(state: HeadlessState, orig: cg.Key, dest: cg.Key, king:
   const origPos = key2pos(orig);
   const destPos = key2pos(dest);
   if (origPos[1] !== destPos[1] || (origPos[1] !== 0 && origPos[1] !== 7)) return false;
+  if (origPos[0] !== 4) return false;
   let rookSq = dest;
   if (origPos[0] === 4 && !state.pieces.has(dest)) {
     if (destPos[0] === 6) rookSq = pos2keyUnsafe([7, destPos[1]]);
@@ -160,6 +161,7 @@ function tryAutoCastle(state: HeadlessState, orig: cg.Key, dest: cg.Key): boolea
   const origPos = key2pos(orig);
   const destPos = key2pos(dest);
   if ((origPos[1] !== 0 && origPos[1] !== 7) || origPos[1] !== destPos[1]) return false;
+  if (origPos[0] !== 4) return false;
   if (origPos[0] === 4 && !state.pieces.has(dest)) {
     if (destPos[0] === 6) dest = pos2keyUnsafe([7, destPos[1]]);
     else if (destPos[0] === 2) dest = pos2keyUnsafe([0, destPos[1]]);
