@@ -106,7 +106,7 @@ export function unsetLastPremove(state: HeadlessState): void {
   }
 }
 
-function visuallyMovePiece(state: HeadlessState, orig: cg.Key, dest: cg.Key): void {
+export function visuallyMovePiece(state: HeadlessState, orig: cg.Key, dest: cg.Key): void {
   const piece = state.pieces.get(orig);
   if (!piece) return;
   if (piece.role === 'king' && state.autoCastle && tryVisualCastle(state, orig, dest, piece)) return;
@@ -389,11 +389,7 @@ export function playPremove(state: HeadlessState): boolean {
       if (pm.queue.length && pm.maxQueue > 1) {
         pm.piecesBeforePremoves = new Map(state.pieces);
         for (const m of pm.queue) {
-          const piece = state.pieces.get(m[0]);
-          if (piece) {
-            state.pieces.delete(m[0]);
-            state.pieces.set(m[1], piece);
-          }
+          visuallyMovePiece(state, m[0], m[1]);
         }
       } else if (!pm.queue.length) {
         callUserFunction(pm.events.unset);

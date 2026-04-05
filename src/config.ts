@@ -1,5 +1,5 @@
 import { HeadlessState } from './state.js';
-import { setCheck, setSelected } from './board.js';
+import { setCheck, setSelected, visuallyMovePiece } from './board.js';
 import { read as fenRead } from './fen.js';
 import { DrawShape, DrawBrushes } from './draw.js';
 import * as cg from './types.js';
@@ -121,11 +121,7 @@ export function configure(state: HeadlessState, config: Config): void {
       state.premovable.piecesBeforePremoves = new Map(state.pieces);
       // Re-apply visual premove positions so pieces don't flicker back
       for (const m of state.premovable.queue) {
-        const piece = state.pieces.get(m[0]);
-        if (piece) {
-          state.pieces.delete(m[0]);
-          state.pieces.set(m[1], piece);
-        }
+        visuallyMovePiece(state, m[0], m[1]);
       }
     }
   }
